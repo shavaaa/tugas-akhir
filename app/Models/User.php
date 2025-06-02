@@ -48,4 +48,13 @@ class User extends Authenticatable
             'custom_fields' => 'array',
         ];
     }
+
+    protected static function booted()
+    {
+        static::created(function ($user) {
+            if (!$user->hasRole('Pengguna')) {
+                $user->assignRole('Pengguna');
+            }
+        });
+    }
 }

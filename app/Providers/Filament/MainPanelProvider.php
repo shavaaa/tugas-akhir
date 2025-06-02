@@ -31,7 +31,7 @@ class MainPanelProvider extends PanelProvider
             ->id('main')
             ->path('main')
             ->login()
-            ->registration(\App\Filament\Pages\Auth\Register::class)
+            ->registration()
             ->colors([
                 //'primary' => '#d1aaae',
                 'primary' => Color::Pink,
