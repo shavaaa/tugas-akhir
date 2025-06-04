@@ -72,7 +72,7 @@ class ServiceScheduleResource extends Resource
                             ->validationMessages([
                                 'after_or_equal' => 'Tanggal tidak boleh kurang dari hari ini.',
                             ]),
-                            
+
                         Forms\Components\Select::make('status')
                             ->label('Status')
                             ->options([
@@ -292,6 +292,11 @@ class ServiceScheduleResource extends Resource
         return [
             // Add relation managers here if needed
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->available();
     }
 
     public static function getPages(): array
