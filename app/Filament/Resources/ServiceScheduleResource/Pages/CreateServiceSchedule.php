@@ -14,7 +14,14 @@ class CreateServiceSchedule extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // Validasi jadwal tabrakan
+        // 🧠 Hitung dulu waktu_selesai supaya bisa dipakai buat validasi bentrok
+        if (!isset($data['waktu_selesai']) && isset($data['waktu_mulai'], $data['durasi'])) {
+            $data['waktu_selesai'] = \Carbon\Carbon::parse($data['waktu_mulai'])
+                ->addMinutes((int) $data['durasi'])
+                ->format('H:i');
+        }
+
+        // ✅ Sekarang baru validasi bentrok
         $exists = ServiceSchedule::where('tanggal', $data['tanggal'])
             ->where(function ($query) use ($data) {
                 $query->whereBetween('waktu_mulai', [$data['waktu_mulai'], $data['waktu_selesai']])
@@ -33,7 +40,6 @@ class CreateServiceSchedule extends CreateRecord
                 ->body('Ada jadwal lain di tanggal & jam yang sama. Silakan pilih waktu lain.')
                 ->send();
 
-            // Tambahkan ini biar data ga masuk
             throw ValidationException::withMessages([
                 'waktu_mulai' => 'Ada jadwal lain di tanggal & jam yang sama.',
             ]);

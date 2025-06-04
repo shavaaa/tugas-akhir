@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ServiceScheduleResource\Pages;
 use App\Filament\Resources\ServiceScheduleResource\RelationManagers;
 use App\Models\ServiceSchedule;
+use Doctrine\DBAL\Schema\Column;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -29,6 +30,30 @@ class ServiceScheduleResource extends Resource
     protected static ?int $navigationSort = 6;
     protected static ?string $recordTitleAttribute = 'tanggal';
 
+    public static function syncWaktuSelesai($get, $set): void
+    {
+        $waktuMulai = $get('waktu_mulai');
+        $durasi = $get('durasi');
+
+        if ($waktuMulai && $durasi) {
+            try {
+                // Pakai Carbon::parse biar fleksibel formatnya
+                $mulai = Carbon::parse($waktuMulai);
+                $selesai = $mulai->copy()->addMinutes(intval($durasi));
+
+                // Set waktu_selesai dalam format H:i (tanpa detik)
+                $set('waktu_selesai', $selesai->format('H:i'));
+            } catch (\Exception $e) {
+                // Kalau parsing gagal, kosongin
+                $set('waktu_selesai', null);
+            }
+        } else {
+            // Kalau salah satu belum diisi
+            $set('waktu_selesai', null);
+        }
+    }
+
+
     public static function form(Form $form): Form
     {
         return $form
@@ -47,75 +72,60 @@ class ServiceScheduleResource extends Resource
                             ->validationMessages([
                                 'after_or_equal' => 'Tanggal tidak boleh kurang dari hari ini.',
                             ]),
-
-                        Forms\Components\Grid::make(2)
-                            ->schema([
-                                Forms\Components\TimePicker::make('waktu_mulai')
-                                    ->label('Jam Mulai')
-                                    ->required()
-                                    ->seconds(false)
-                                    ->native(false)
-                                    ->minutesStep(15)
-                                    ->helperText('Format: HH:MM')
-                                    ->live()
-                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                        // Auto-set end time to 1 hour after start time
-                                        if ($state && !$get('waktu_selesai')) {
-                                            $startTime = Carbon::createFromFormat('H:i', $state);
-                                            $endTime = $startTime->copy()->addHour();
-                                            $set('waktu_selesai', $endTime->format('H:i'));
-                                        }
-                                    }),
-
-                                Forms\Components\TimePicker::make('waktu_selesai')
-                                    ->label('Jam Selesai')
-                                    ->required()
-                                    ->seconds(false)
-                                    ->native(false)
-                                    ->minutesStep(15)
-                                    ->helperText('Format: HH:MM')
-                                    ->after('waktu_mulai')
-                                    ->rules([
-                                        function () {
-                                            return function (string $attribute, $value, $fail) {
-                                                $waktuMulai = request()->input('waktu_mulai');
-                                                if ($waktuMulai && $value) {
-                                                    $start = Carbon::createFromFormat('H:i', $waktuMulai);
-                                                    $end = Carbon::createFromFormat('H:i', $value);
-
-                                                    if ($end->lessThanOrEqualTo($start)) {
-                                                        $fail('Jam selesai harus lebih besar dari jam mulai.');
-                                                    }
-
-                                                    // Check minimum duration (e.g., 30 minutes)
-                                                    if ($end->diffInMinutes($start) < 30) {
-                                                        $fail('Durasi minimal adalah 30 menit.');
-                                                    }
-                                                }
-                                            };
-                                        }
-                                    ]),
-                            ]),
-
+                            
                         Forms\Components\Select::make('status')
                             ->label('Status')
                             ->options([
                                 'tersedia' => 'Tersedia',
                                 'terisi' => 'Terisi',
-                                'dibatalkan' => 'Dibatalkan',
+                                'expired' => 'Expired',
                             ])
                             ->default('tersedia')
                             ->required()
                             ->helperText('Status ketersediaan jadwal'),
 
-                        Forms\Components\Textarea::make('catatan')
-                            ->label('Catatan')
-                            ->placeholder('Catatan tambahan untuk jadwal ini...')
-                            ->maxLength(500)
-                            ->rows(3)
-                            ->columnSpanFull(),
+                        Forms\Components\Grid::make(3)
+                            ->schema([
+                                Forms\Components\TimePicker::make('waktu_mulai')
+                                    ->label('Jam Mulai')
+                                    ->required()
+                                    ->reactive()
+                                    ->timezone('Asia/Jakarta')
+                                    ->seconds(false)
+                                    ->datalist([
+                                        '08:00',
+                                        '09:00',
+                                        '10:00',
+                                        '11:00',
+                                        '13:00',
+                                        '14:00',
+                                        '15:00',
+                                    ])
+                                    ->afterStateUpdated(fn($state, $set, $get) => self::syncWaktuSelesai($get, $set)),
+
+                                Forms\Components\Select::make('durasi')
+                                    ->label('Durasi')
+                                    ->required()
+                                    ->reactive()
+                                    ->native(false)
+                                    ->options([
+                                        30 => '30 Menit',
+                                        45 => '45 Menit',
+                                        60 => '1 Jam',
+                                        90 => '1 Jam 30 Menit',
+                                        120 => '2 Jam',
+                                    ])
+                                    ->afterStateUpdated(fn($state, $set, $get) => self::syncWaktuSelesai($get, $set)),
+
+                                Forms\Components\TextInput::make('waktu_selesai')
+                                    ->label('Jam Selesai')
+                                    ->required()
+                                    ->disabled()
+                                    ->live()
+                                    ->helperText('Otomatis dihitung dari jam mulai + durasi'),
+                            ]),
                     ])
-                    ->columnSpanFull(),
+                    ->columns(2),
             ]);
     }
 
@@ -157,7 +167,7 @@ class ServiceScheduleResource extends Resource
                         return $diff . ' menit';
                     })
                     ->badge()
-                    ->color('gray'),
+                    ->color('info'),
 
                 Tables\Columns\BadgeColumn::make('status')
                     ->label('Status')
