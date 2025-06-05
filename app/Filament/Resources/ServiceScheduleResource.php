@@ -65,7 +65,7 @@ class ServiceScheduleResource extends Resource
                             ->label('Tanggal')
                             ->required()
                             ->native(false)
-                            ->minDate(now())
+                            ->minDate(today())
                             ->displayFormat('d/m/Y')
                             ->helperText('Pilih tanggal untuk jadwal layanan')
                             ->rules(['after_or_equal:today'])
