@@ -141,11 +141,13 @@ class ServiceScheduleResource extends Resource
 
                 Tables\Columns\TextColumn::make('waktu_mulai')
                     ->label('Jam Mulai')
+                    ->format('H:i')
                     ->sortable()
                     ->icon('heroicon-m-clock'),
 
                 Tables\Columns\TextColumn::make('waktu_selesai')
                     ->label('Jam Selesai')
+                    ->format('H:i')
                     ->sortable()
                     ->icon('heroicon-m-clock'),
 
