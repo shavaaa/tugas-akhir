@@ -83,6 +83,10 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('service.name')
                     ->label('Nama Layanan')
                     ->sortable(),
+                
+                    Tables\Columns\TextColumn::make('schedule.tanggal')
+                    ->label('Tanggal Booking')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('beautician.name')
                     ->label('Nama Terapis')
                     ->sortable(),
