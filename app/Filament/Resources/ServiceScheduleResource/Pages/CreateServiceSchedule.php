@@ -21,6 +21,22 @@ class CreateServiceSchedule extends CreateRecord
                 ->format('H:i');
         }
 
+        // 🔒 Validasi agar waktu_selesai tidak lewat dari 17:00
+        $maxWaktu = \Carbon\Carbon::createFromTime(17, 0); // batas jam 17:00
+        $selesai = \Carbon\Carbon::parse($data['waktu_selesai']);
+
+        if ($selesai->gt($maxWaktu)) {
+            Notification::make()
+                ->title('Jam Tidak Valid')
+                ->danger()
+                ->body('Waktu selesai tidak boleh lebih dari jam 17:00.')
+                ->send();
+
+            throw ValidationException::withMessages([
+                'waktu_mulai' => 'Waktu selesai tidak boleh lebih dari jam 17:00.',
+            ]);
+        }
+
         // ✅ Sekarang baru validasi bentrok
         $exists = ServiceSchedule::where('tanggal', $data['tanggal'])
             ->where(function ($query) use ($data) {

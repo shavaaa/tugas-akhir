@@ -99,6 +99,8 @@ class ServiceScheduleResource extends Resource
                                         '13:00',
                                         '14:00',
                                         '15:00',
+                                        '16:00',
+                                        '17:00',
                                     ])
                                     ->afterStateUpdated(fn($state, $set, $get) => self::syncWaktuSelesai($get, $set)),
 
