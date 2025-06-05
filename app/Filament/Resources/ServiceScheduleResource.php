@@ -90,7 +90,6 @@ class ServiceScheduleResource extends Resource
                                     ->label('Jam Mulai')
                                     ->required()
                                     ->reactive()
-                                    ->timezone('Asia/Jakarta')
                                     ->seconds(false)
                                     ->datalist([
                                         '08:00',
@@ -142,13 +141,11 @@ class ServiceScheduleResource extends Resource
 
                 Tables\Columns\TextColumn::make('waktu_mulai')
                     ->label('Jam Mulai')
-                    ->time('H:i')
                     ->sortable()
                     ->icon('heroicon-m-clock'),
 
                 Tables\Columns\TextColumn::make('waktu_selesai')
                     ->label('Jam Selesai')
-                    ->time('H:i')
                     ->sortable()
                     ->icon('heroicon-m-clock'),
 
